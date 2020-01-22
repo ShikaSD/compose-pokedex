@@ -10,24 +10,15 @@ import androidx.ui.core.dp
 import androidx.ui.core.sp
 import androidx.ui.foundation.Clickable
 import androidx.ui.foundation.DrawImage
-import androidx.ui.foundation.VerticalScroller
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.graphics.Color
-import androidx.ui.layout.Column
-import androidx.ui.layout.Container
-import androidx.ui.layout.ExpandedHeight
-import androidx.ui.layout.ExpandedWidth
-import androidx.ui.layout.Gravity
-import androidx.ui.layout.Height
-import androidx.ui.layout.Padding
-import androidx.ui.layout.Spacing
-import androidx.ui.layout.Stack
+import androidx.ui.layout.*
 import androidx.ui.material.Button
 import androidx.ui.material.MaterialTheme
 import androidx.ui.material.ripple.Ripple
 import androidx.ui.material.surface.Surface
 import androidx.ui.res.colorResource
-import androidx.ui.res.imageResource
+import androidx.ui.res.loadImageResource
 import androidx.ui.text.ParagraphStyle
 import androidx.ui.text.TextStyle
 import androidx.ui.text.font.FontFamily
@@ -35,23 +26,10 @@ import androidx.ui.text.font.FontWeight
 import androidx.ui.text.style.TextAlign
 import androidx.ui.tooling.preview.Preview
 import com.github.zsoltk.pokedex.R
-import com.github.zsoltk.pokedex.common.AsyncState.Error
-import com.github.zsoltk.pokedex.common.AsyncState.Initialised
-import com.github.zsoltk.pokedex.common.AsyncState.Loading
-import com.github.zsoltk.pokedex.common.AsyncState.Result
-import com.github.zsoltk.pokedex.common.PokeBallBackground
-import com.github.zsoltk.pokedex.common.PokeBallSmall
-import com.github.zsoltk.pokedex.common.PokemonTypeLabels
-import com.github.zsoltk.pokedex.common.RotateIndefinitely
-import com.github.zsoltk.pokedex.common.TableRenderer
-import com.github.zsoltk.pokedex.common.Title
+import com.github.zsoltk.pokedex.common.*
+import com.github.zsoltk.pokedex.common.AsyncState.*
 import com.github.zsoltk.pokedex.common.TypeLabelMetrics.Companion.SMALL
-import com.github.zsoltk.pokedex.common.observe
-import com.github.zsoltk.pokedex.entity.Pokemon
-import com.github.zsoltk.pokedex.entity.PokemonApi
-import com.github.zsoltk.pokedex.entity.PokemonLiveData
-import com.github.zsoltk.pokedex.entity.color
-import com.github.zsoltk.pokedex.entity.pokemons
+import com.github.zsoltk.pokedex.entity.*
 import com.github.zsoltk.pokedex.lightThemeColors
 
 interface PokemonList {
@@ -118,10 +96,12 @@ private fun ErrorView(onRetryClicked: () -> Unit) {
 
 @Composable
 private fun ContentView(onPokemonSelected: (Pokemon) -> Unit) {
+    println("Recomposing content")
     Container(expanded = true) {
-        VerticalScroller {
-            Padding(padding = 32.dp) {
-                Column {
+        Padding(padding = 32.dp) {
+            Recycler2(itemsCount = pokemons.size + 1) {
+                println("Recomposing for $it")
+                if (it == 0) {
                     Title(
                         text = "Pokedex",
                         color = (+MaterialTheme.colors()).onSurface,
@@ -130,14 +110,14 @@ private fun ContentView(onPokemonSelected: (Pokemon) -> Unit) {
                             bottom = 24.dp
                         )
                     )
-                    TableRenderer(cols = 2, cellSpacing = 4.dp, items = pokemons) { cell ->
-                        PokeDexCard(cell.item, onPokemonSelected)
-                    }
+                } else {
+                    PokeDexCard(pokemons[it - 1], onPokemonSelected)
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun PokeDexCard(
@@ -184,7 +164,10 @@ private fun PokeDexCardContent(pokemon: Pokemon) {
         pokemon.image?.let { image ->
             positioned(bottomInset = (8).dp, rightInset = (8).dp) {
                 Container(width = 72.dp, height = 72.dp) {
-                    DrawImage(image = +imageResource(image))
+                    val deferred = +loadImageResource(image)
+                    deferred.resource.resource?.let {
+                        DrawImage(image = it)
+                    }
                 }
             }
         }
